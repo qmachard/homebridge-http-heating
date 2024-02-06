@@ -1,22 +1,13 @@
 import { API, DynamicPlatformPlugin, Logger, PlatformAccessory, PlatformConfig, Service, Characteristic } from 'homebridge';
 
 import { PLATFORM_NAME, PLUGIN_NAME } from './settings';
-import { HeatingAccessory, Planning } from './accessory';
+import { HeatingAccessory, HeatingAccessoryConfig } from './accessory';
 
-const exampleDevices = [
-  {
-    id: 'heating-1',
-    name: 'Heating 1',
-    config: {
-      planning: [
-        { start_time: '06:00', end_time: '12:00', state: 'HEAT' },
-        { start_time: '12:00', end_time: '18:00', state: 'OFF' },
-        { start_time: '18:00', end_time: '22:00', state: 'HEAT' },
-        { start_time: '22:00', end_time: '06:00', state: 'OFF' },
-      ] as Planning,
-    },
-  },
-];
+type Device = {
+  id: string;
+  name: string;
+  config: HeatingAccessoryConfig;
+};
 
 /**
  * HomebridgePlatform
@@ -30,12 +21,16 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
   // this is used to track restored cached accessories
   public readonly accessories: PlatformAccessory[] = [];
 
+  private readonly devices: Device[];
+
   constructor(
     public readonly log: Logger,
     public readonly config: PlatformConfig,
     public readonly api: API,
   ) {
     this.log.debug('Finished initializing platform:', this.config.name);
+
+    this.devices = this.config.devices as Device[] || [];
 
     // When this event is fired it means Homebridge has restored all cached accessories from disk.
     // Dynamic Platform plugins should only register new accessories after this event was fired,
@@ -62,7 +57,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
 
   clearAccessories() {
     const oldAccessories = this.accessories.filter(
-      accessory => !exampleDevices.some(device => accessory.UUID === this.api.hap.uuid.generate(device.id)),
+      accessory => !this.devices.some(device => accessory.UUID === this.api.hap.uuid.generate(device.id)),
     );
 
     for (const accessory of oldAccessories) {
@@ -77,7 +72,7 @@ export class HomebridgePlatform implements DynamicPlatformPlugin {
    * must not be registered again to prevent "duplicate UUID" errors.
    */
   discoverDevices() {
-    for (const device of exampleDevices) {
+    for (const device of this.devices) {
       const uuid = this.api.hap.uuid.generate(device.id);
 
       const existingAccessory = this.accessories.find(accessory => accessory.UUID === uuid);

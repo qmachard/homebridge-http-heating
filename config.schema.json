@@ -9,7 +9,49 @@
         "title": "Name",
         "type": "string",
         "required": true,
-        "default": "Example Dynamic Platform"
+        "default": "Name of the heating system"
+      },
+      "planning": {
+        "title": "Planning",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "start_time": {
+              "title": "Start Time",
+              "type": "string",
+              "format": "time",
+              "required": true
+            },
+            "end_time": {
+              "title": "End Time",
+              "type": "string",
+              "format": "time",
+              "required": true
+            },
+            "state": {
+              "title": "State",
+              "type": "number",
+              "required": true
+            }
+          }
+        }
+      },
+      "temperatures": {
+        "title": "Temperatures",
+        "type": "object",
+        "properties": {
+          "off": {
+            "title": "Off",
+            "type": "number",
+            "required": true
+          },
+          "heat": {
+            "title": "Heat",
+            "type": "number",
+            "required": true
+          }
+        }
       }
     }
   }

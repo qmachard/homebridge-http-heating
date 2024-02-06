@@ -2,7 +2,15 @@ import { PlatformAccessory, Service } from 'homebridge';
 
 import { HomebridgePlatform } from './platform';
 
-export type PlanningState = 'HEAT' | 'OFF';
+export type HeatingAccessoryConfig = {
+  planning?: Planning;
+  temperatures?: {
+    off: number;
+    heat: number;
+  };
+};
+
+export type PlanningState = 1 | 0;
 export type PlanningItem = { start_time: string; end_time: string; state: PlanningState };
 export type Planning = PlanningItem[];
 
@@ -27,7 +35,7 @@ export class HeatingAccessory {
   constructor(
     private readonly platform: HomebridgePlatform,
     private readonly accessory: PlatformAccessory,
-    private readonly config: { planning?: Planning },
+    private readonly config: HeatingAccessoryConfig,
   ) {
     this.accessory.getService(this.platform.Service.AccessoryInformation)!
       .setCharacteristic(this.platform.Characteristic.Manufacturer, 'Homebridge')
@@ -39,8 +47,8 @@ export class HeatingAccessory {
 
     this.service.getCharacteristic(this.platform.Characteristic.TargetTemperature)
       .setProps({
-        minValue: 19,
-        maxValue: 19,
+        minValue: this.config.temperatures?.heat ?? 19,
+        maxValue: this.config.temperatures?.heat ?? 19,
       });
 
     this.service.getCharacteristic(this.platform.Characteristic.CurrentTemperature)
@@ -78,7 +86,7 @@ export class HeatingAccessory {
       }
     });
 
-    if (headerPlanner?.state === 'HEAT') {
+    if (headerPlanner?.state === 1) {
       return this.platform.Characteristic.CurrentHeatingCoolingState.HEAT;
     }
 
@@ -101,10 +109,10 @@ export class HeatingAccessory {
 
   private getCurrentTemperature(): number {
     if (this.currentState === this.platform.Characteristic.CurrentHeatingCoolingState.HEAT) {
-      return 19;
+      return this.config.temperatures?.heat ?? 19;
     }
 
-    return 15.5;
+    return this.config.temperatures?.off ?? 15;
   }
 
   private refreshCurrentState(): void {
@@ -114,6 +122,6 @@ export class HeatingAccessory {
 
     this.service.setCharacteristic(this.platform.Characteristic.CurrentHeatingCoolingState, this.currentState);
     this.service.setCharacteristic(this.platform.Characteristic.CurrentTemperature, this.getCurrentTemperature());
-    this.service.setCharacteristic(this.platform.Characteristic.TargetTemperature, 19);
+    this.service.setCharacteristic(this.platform.Characteristic.TargetTemperature, this.config.temperatures?.heat ?? 19);
   }
 }
