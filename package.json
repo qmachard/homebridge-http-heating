@@ -1,8 +1,8 @@
 {
-  "private": true,
+  "private": false,
   "displayName": "Homebridge HTTP Heating Plugin",
   "name": "@qmachard/homebridge-http-heating",
-  "version": "1.0.0",
+  "version": "0.0.0",
   "description": "Homebridge plugin to control heating via HTTP",
   "license": "Apache-2.0",
   "repository": {
