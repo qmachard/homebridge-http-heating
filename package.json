@@ -27,8 +27,9 @@
     "homebridge-plugin"
   ],
   "dependencies": {
+    "dayjs": "^1.11.10",
     "homebridge": "^1.6.0",
-    "dayjs": "^1.11.10"
+    "jsonpath": "^1.1.1"
   },
   "devDependencies": {
     "@types/node": "^18.16.20",

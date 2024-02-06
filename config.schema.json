@@ -55,6 +55,38 @@
             "required": true
           }
         }
+      },
+      "http": {
+        "title": "HTTP",
+        "type": "object",
+        "required": true,
+        "properties": {
+          "heat_url": {
+            "title": "Heat URL",
+            "type": "string",
+            "required": true
+          },
+          "off_url": {
+            "title": "Off URL",
+            "type": "string",
+            "required": true
+          },
+          "status_url": {
+            "title": "Status URL",
+            "type": "string",
+            "required": true
+          },
+          "status_path": {
+            "title": "Status JSON Path",
+            "type": "string",
+            "required": true
+          },
+          "status_value": {
+            "title": "Status JSON Value",
+            "type": "any",
+            "required": true
+          }
+        }
       }
     }
   }

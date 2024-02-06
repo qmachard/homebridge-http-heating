@@ -1,5 +1,7 @@
 import { PlatformAccessory, Service } from 'homebridge';
 import dayjs from 'dayjs';
+import * as http from 'http';
+import jsonpath from 'jsonpath';
 
 import { HomebridgePlatform } from './platform';
 
@@ -8,6 +10,13 @@ export type HeatingAccessoryConfig = {
   temperatures?: {
     off: number;
     heat: number;
+  };
+  http: {
+    heat_url: string;
+    off_url: string;
+    status_url: string;
+    status_path: string;
+    status_value: string;
   };
 };
 
@@ -66,10 +75,10 @@ export class HeatingAccessory {
         this.refreshCurrentState();
       });
 
-    this.refreshCurrentState();
+    this.pollStatus();
 
     setInterval(() => {
-      this.refreshCurrentState();
+      this.pollStatus();
     }, 60 * 1000);
   }
 
@@ -93,7 +102,7 @@ export class HeatingAccessory {
     return this.platform.Characteristic.CurrentHeatingCoolingState.OFF;
   }
 
-  private getCurrentState(): number {
+  private getExpectedState(): number {
     const plannedState = this.getPlannedState();
 
     if (this.targetState === this.platform.Characteristic.CurrentHeatingCoolingState.OFF) {
@@ -115,8 +124,66 @@ export class HeatingAccessory {
     return this.config.temperatures?.off ?? 15;
   }
 
+  private pollStatus(): void {
+    this.platform.log.debug('Polling status...');
+
+    http.get(this.config.http.status_url, (res) => {
+      let data = '';
+
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      res.on('end', () => {
+        const json = JSON.parse(data);
+
+        const status = jsonpath.query(json, this.config.http.status_path).some((value) => {
+          return value === this.config.http.status_value;
+        }) as boolean;
+
+        this.currentState = status
+          ? this.platform.Characteristic.CurrentHeatingCoolingState.HEAT
+          : this.platform.Characteristic.CurrentHeatingCoolingState.OFF;
+
+        this.refreshCurrentState();
+      });
+
+      res.on('error', (error) => {
+        this.platform.log.error('Polling status failed', error);
+      });
+    });
+  }
+
+  private async postStatus() {
+    this.platform.log.debug('Post status');
+
+    return new Promise<void>((resolve, reject) => {
+      http.get(this.currentState === this.platform.Characteristic.CurrentHeatingCoolingState.HEAT
+        ? this.config.http.heat_url
+        : this.config.http.off_url, (res) => {
+        res.on('end', () => {
+          resolve();
+        });
+
+        res.on('error', (error) => {
+          reject(error);
+        });
+      });
+    });
+  }
+
   private refreshCurrentState(): void {
-    this.currentState = this.getCurrentState();
+    const expectedState = this.getExpectedState();
+
+    if (this.currentState !== expectedState) {
+      this.currentState = expectedState;
+
+      this.postStatus().then(() => {
+        this.platform.log.debug('Post status success');
+      }).catch((error) => {
+        this.platform.log.error('Post status error', error);
+      });
+    }
 
     this.platform.log.debug('Refresh current state', this.currentState, this.targetState);
 
