@@ -1,4 +1,5 @@
 import { PlatformAccessory, Service } from 'homebridge';
+import dayjs from 'dayjs';
 
 import { HomebridgePlatform } from './platform';
 
@@ -10,20 +11,16 @@ export type HeatingAccessoryConfig = {
   };
 };
 
-export type PlanningState = 1 | 0;
-export type PlanningItem = { start_time: string; end_time: string; state: PlanningState };
-export type Planning = PlanningItem[];
+export type PlanningHeat = { start_time: string; end_time: string };
+export type PlanningDay = PlanningHeat[];
+export type Planning = PlanningDay[];
 
-// TEST FUNCTION
-let currentHour = 0;
+function getCurrentDay(): number {
+  return dayjs().day();
+}
+
 function getCurrentTime(): string {
-  currentHour = (currentHour + 1) % 24;
-
-  if (currentHour < 10) {
-    return `0${currentHour}:00`;
-  }
-
-  return `${currentHour}:00`;
+  return dayjs().format('HH:mm');
 }
 
 export class HeatingAccessory {
@@ -70,23 +67,26 @@ export class HeatingAccessory {
       });
 
     this.refreshCurrentState();
+
     setInterval(() => {
       this.refreshCurrentState();
-    }, 5000);
+    }, 60 * 1000);
   }
 
   private getPlannedState(): number {
+    const currentDay = getCurrentDay();
     const currentTime = getCurrentTime();
 
-    const headerPlanner = this.config.planning?.find((planner) => {
-      if (planner.start_time <= planner.end_time) {
-        return planner.start_time <= currentTime && currentTime < planner.end_time;
-      } else {
-        return planner.start_time <= currentTime && currentTime <= '23:59' || currentTime < planner.end_time && currentTime >= '00:00';
+    const mustHeat = this.config.planning?.[currentDay]?.some(planningHeat => {
+      if (planningHeat.start_time <= planningHeat.end_time) {
+        return planningHeat.start_time <= currentTime && currentTime < planningHeat.end_time;
       }
+
+      return planningHeat.start_time <= currentTime && currentTime <= '23:59'
+        || currentTime < planningHeat.end_time && currentTime >= '00:00';
     });
 
-    if (headerPlanner?.state === 1) {
+    if (mustHeat) {
       return this.platform.Characteristic.CurrentHeatingCoolingState.HEAT;
     }
 

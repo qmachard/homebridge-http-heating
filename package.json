@@ -26,13 +26,15 @@
   "keywords": [
     "homebridge-plugin"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "homebridge": "^1.6.0",
+    "dayjs": "^1.11.10"
+  },
   "devDependencies": {
     "@types/node": "^18.16.20",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
     "eslint": "^8.45.0",
-    "homebridge": "^1.6.0",
     "nodemon": "^2.0.22",
     "rimraf": "^3.0.2",
     "ts-node": "^10.9.1",
